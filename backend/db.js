@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-mongoose.connect("mongodb+srv://gokulyadav:fIqcyJKi99bExcWw@cluster0.zv4aswl.mongodb.net/paytm")
+mongoose.connect("mongoose.connect("mongodb+srv://NEW_USER:NEW_PASSWORD@cluster0.zv4aswl.mongodb.net/paytm"))
 .then(() => {
     console.log('Connected to MongoDB Atlas successfully');
 })
