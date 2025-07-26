@@ -77,6 +77,8 @@ router.post("/signin", async (req, res) => {
 
     if (user) {
         const token = jwt.sign({
+            firstName: user.firstName,  // Add this
+            username: user.username ,
             userId: user._id
         }, JWT_SECRET);
   
@@ -98,6 +100,31 @@ const updateBody = zod.object({
     lastName: zod.string().optional(),
 })
 
+// Add this route to your user router
+router.get("/me", authMiddleware, async (req, res) => {
+    try {
+        console.log("🔍 /me route hit, userId:", req.userId);
+        
+        const user = await User.findById(req.userId).select('-password');
+        if (!user) {
+            console.log("❌ User not found for ID:", req.userId);
+            return res.status(404).json({ error: "User not found" });
+        }
+        
+        console.log("✅ User found:", user.firstName, user.lastName);
+        
+        res.json({
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            _id: user._id
+        });
+    } catch (error) {
+        console.log("❌ /me route error:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 router.put("/", authMiddleware, async (req, res) => {
     const { success } = updateBody.safeParse(req.body)
     if (!success) {
@@ -115,29 +142,35 @@ router.put("/", authMiddleware, async (req, res) => {
     })
 })
 
-router.get("/bulk", async (req, res) => {
+router.get("/bulk", authMiddleware, async (req, res) => {
     const filter = req.query.filter || "";
-
-    const users = await User.find({
-        $or: [{
-            firstName: {
-                "$regex": filter
-            }
-        }, {
-            lastName: {
-                "$regex": filter
-            }
-        }]
-    })
-
-    res.json({
-        user: users.map(user => ({
-            username: user.username,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            _id: user._id
-        }))
-    })
-})
+    
+    try {
+        // Get all users that match the search filter
+        const users = await User.find({
+            $or: [
+                { firstName: { "$regex": filter, "$options": "i" } },
+                { lastName: { "$regex": filter, "$options": "i" } }
+            ]
+        });
+        
+        // Filter out the current logged-in user
+        const filteredUsers = users.filter(user => 
+            user._id.toString() !== req.userId.toString()
+        );
+        
+        res.json({
+            user: filteredUsers.map(user => ({
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                _id: user._id
+            }))
+        });
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
 
 module.exports = router;

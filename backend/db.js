@@ -1,7 +1,13 @@
-// backend/db.js
 const mongoose = require('mongoose');
 
-mongoose.connect("mongodb://localhost:27017/paytm")
+mongoose.connect("mongodb+srv://gokulyadav:fIqcyJKi99bExcWw@cluster0.zv4aswl.mongodb.net/paytm")
+.then(() => {
+    console.log('Connected to MongoDB Atlas successfully');
+})
+.catch((error) => {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+});
 
 // Create a Schema for Users
 const userSchema = new mongoose.Schema({

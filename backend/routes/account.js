@@ -3,6 +3,8 @@ const express = require('express');
 const { authMiddleware } = require('../middleware');
 const { Account } = require('../db');
 const { default: mongoose } = require('mongoose');
+const { User } = require('../db'); // make sure the path is correct
+
 
 const router = express.Router();
 
@@ -41,15 +43,26 @@ router.post("/transfer", authMiddleware, async (req, res) => {
         });
     }
 
+    const fromUser = await User.findOne({ _id: req.userId });
+    const toUser = await User.findOne({ _id: to });
+
     // Perform the transfer
     await Account.updateOne({ userId: req.userId }, { $inc: { balance: -amount } }).session(session);
     await Account.updateOne({ userId: to }, { $inc: { balance: amount } }).session(session);
 
     // Commit the transaction
+
+    const updatedAccount = await Account.findOne({ userId: req.userId }).session(session);
+
     await session.commitTransaction();
     res.json({
-        message: "Transfer successful"
+        message: "Transfer successful",
+        from: fromUser.username,
+        to: toUser.username,
+        balance: updatedAccount.balance
     });
+    
+      
 });
 
 module.exports = router;
